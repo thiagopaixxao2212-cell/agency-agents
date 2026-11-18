@@ -329,8 +329,10 @@ def cmd_status(cfg, args):
     raiz = ET.fromstring(ecp(ip, "GET", "/query/active-app"))
     app = raiz.find("app")
     tela = raiz.find("screensaver")
-    if app is not None:
-        print(f"App ativo: {(app.text or '').strip()} (id {app.get('id', '-')})")
+    if app is not None and not app.get("id"):
+        print("App ativo: nenhum (tela inicial da Roku)")
+    elif app is not None:
+        print(f"App ativo: {(app.text or '').strip()} (id {app.get('id')})")
     if tela is not None:
         print(f"Protetor de tela: {(tela.text or '').strip()}")
     try:
