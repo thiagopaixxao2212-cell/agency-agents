@@ -393,7 +393,10 @@ def cmd_bluetooth(cfg, args):
             return
         tecla(ip, t)
         time.sleep(0.8 if t == "Home" else 0.45)
-    print("Pronto. Na TV, escolha você mesmo 'Configurar um novo dispositivo' / parear.")
+    print("Pronto. A TV deve estar em 'Controles remotos e dispositivos'\n"
+          "(opções: Controles remotos, Alto-falantes, Adicionar dispositivos).\n"
+          "Esta TV não lista Bluetooth para fone. Para ouvir no fone, use a audição privada\n"
+          "do app Roku no celular (veja o README).")
 
 
 def gravar_sequencia(cfg):

@@ -36,14 +36,23 @@ Sem `config.json`, o script usa 192.168.5.199. Para forçar outro IP: `python ro
 A API ECP **não tem comandos de Bluetooth**. O comando `bluetooth` faz três coisas:
 
 1. Mostra o que a TV informa em `device-info` sobre fone, audição privada e Bluetooth.
-2. `python roku.py bluetooth --gravar`: olhando para a TV, você navega pelo terminal (`w a s d`, `ok`, `voltar`) até **Configurações > Controles remotos e dispositivos** e digita `fim`. A sequência fica salva em `config.json`.
-3. `python roku.py bluetooth`: repete a sequência salva depois de pedir confirmação (`--passo` pede confirmação a cada tecla). Ele só navega pelos menus e não pareia nada. O pareamento você confirma na própria TV.
+2. `python roku.py bluetooth --gravar`: olhando para a TV, você navega pelo terminal (`w a s d`, `sss` = baixo 3x, `ok`, `voltar`) até **Configurações > Controles remotos e dispositivos** e digita `fim`. A sequência fica salva em `config.json`.
+3. `python roku.py bluetooth`: repete a sequência salva depois de pedir confirmação (responda `s`; `--passo` pede confirmação a cada tecla). Ele só navega pelos menus e não muda nenhuma configuração.
 
-Se a TV não tiver Bluetooth para áudio, as alternativas são:
+Sequência gravada nesta TV: `Home Home Left Down×7 Right Down Select`
+(Configurações é o 8º item do menu da esquerda; Controles remotos e dispositivos é o 2º item dentro dele).
 
-- **Audição privada** no app Roku do celular (fone no celular, som da TV no fone).
-- **Controle remoto com saída de fone** (P2), se for compatível com a sua Roku TV.
-- **Transmissor Bluetooth externo** ligado à saída **óptica** ou **P2** da TV.
+### O que foi verificado nesta TV (AOC 43S5135/78G, Roku OS 16.0.4)
+
+- `device-info` **não tem nenhum campo de Bluetooth**.
+- A tela *Controles remotos e dispositivos* tem só: **Controles remotos**, **Alto-falantes** e **Adicionar dispositivos** (acessórios da Roku). Nenhuma opção de Bluetooth ou fone.
+- **Tem audição privada**: `supports-private-listening: true` (inclusive na TV aberta).
+
+### Como ouvir no fone
+
+1. **Audição privada (grátis):** instale o app **Roku** no celular, conecte à TV, ligue o fone (Bluetooth ou com fio) no celular e toque no ícone de fone no controle do app.
+2. **Transmissor Bluetooth externo** na saída **óptica** ou **P2** da TV (confira qual existe atrás da TV).
+3. **Soundbar** no **HDMI 1 (ARC)**, se quiser caixa de som.
 
 ## Erros comuns
 
