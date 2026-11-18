@@ -356,7 +356,7 @@ def etapa_wifi(c):
     if re.search(r"location|localiza", txt, re.I) and "BSSID" not in txt:
         raise RuntimeError("o Windows bloqueou a varredura: ative Configurações > Privacidade > Localização")
     redes = parse_redes(txt)
-    minha = (c.dados.get("conexao", {}).get("wifi") or {}).get("ssid")
+    minha = (c.dados.get("conexao", {}).get("wifi") or {}).get("ssid") or c.dados.get("ssid_padrao")
     aps = [dict(b, ssid=r["ssid"]) for r in redes for b in r["bssids"] if b.get("canal")]
     a24 = [b for b in aps if b["canal"] <= 14]
     a5 = [b for b in aps if b["canal"] > 14]
@@ -539,8 +539,19 @@ def problemas(d):
             p.append((3, f"Perda de {r['perda_pct']}% até {h} (maior que até o roteador): possível problema na operadora."))
         if (r.get("jitter") or 0) > 20:
             p.append((2, f"Jitter alto até {h} ({r['jitter']} ms): atrapalha chamadas e jogos."))
+    tr = d.get("traceroute") or []
+    internos = [s["ip"] for s in tr[1:] if s["ip"] != "*" and ipaddress.ip_address(s["ip"]).is_private
+                and not ipaddress.ip_address(s["ip"]) in ipaddress.ip_network("100.64.0.0/10")]
+    cgnat = [s["ip"] for s in tr if s["ip"] != "*" and ipaddress.ip_address(s["ip"]) in ipaddress.ip_network("100.64.0.0/10")]
+    if internos:
+        p.append((2, f"{len(internos) + 1} roteadores em cascata dentro de casa (NAT {'duplo' if len(internos) == 1 else 'triplo'}): "
+                     f"{con.get('gateway')} → {' → '.join(internos)}. Pode causar problemas em jogos, chamadas e "
+                     "redirecionamento de portas, e cada roteador pode ter o próprio Wi-Fi competindo."))
+    if cgnat:
+        p.append((1, "A operadora usa CGNAT (endereços 100.64.x.x): você não tem IP público próprio; "
+                     "acesso remoto a câmeras/servidores em casa não funciona sem ajuda da operadora."))
     v = d.get("velocidade") or {}
-    if v.get("bufferbloat_nota") in ("C", "D", "F"):
+    if v.get("bufferbloat_nota") in ("B", "C", "D", "F"):
         p.append((2, f"Bufferbloat nota {v['bufferbloat_nota']}: latência sobe {v['acrescimo_sob_carga_ms']} ms quando a rede está ocupada "
                      "(chamadas travam quando alguém baixa/assiste algo). QoS no roteador ajuda."))
     w = con.get("wifi") or {}
@@ -641,10 +652,12 @@ def main():
     ap = argparse.ArgumentParser(description="Diagnóstico da rede (só leitura).")
     ap.add_argument("--rapido", action="store_true", help="pula o teste de velocidade")
     ap.add_argument("--nome", default="", help="rótulo da medição, ex.: antes, depois-canal, cabo")
+    ap.add_argument("--ssid", default="Twibi Thiago", help="nome da sua rede Wi-Fi (usado quando o PC está no cabo)")
     args = ap.parse_args()
     rotulo = datetime.now().strftime("%Y-%m-%d_%H%M") + (f"_{args.nome}" if args.nome else "")
     c = Coleta(PASTA / "resultados" / rotulo)
     c.dados["rotulo"] = args.nome
+    c.dados["ssid_padrao"] = args.ssid
     print("Diagnóstico da rede: só medições, nada é alterado.")
     if c.etapa("Conexão e roteador", etapa_conexao) is None and "conexao" not in c.dados:
         print("Sem informação da conexão; parando.")
