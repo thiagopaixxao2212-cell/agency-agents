@@ -397,7 +397,7 @@ def cmd_bluetooth(cfg, args):
 def gravar_sequencia(cfg):
     ip = cfg["ip"]
     print("MODO GRAVAÇÃO — olhe para a TV.\n"
-          "Comandos: w/s/a/d (ou cima/baixo/esquerda/direita), ok, voltar, home,\n"
+          "Comandos: w/s/a/d (ou cima/baixo/esquerda/direita; 'sss' = baixo 3x), ok, voltar, home,\n"
           "          fim (salva), sair (descarta). Errou? Aperte a direção oposta.\n"
           "Vá até a tela 'Controles remotos e dispositivos' e digite 'fim'.\n"
           "NÃO confirme pareamento nem outras opções durante a gravação.\n")
@@ -415,12 +415,19 @@ def gravar_sequencia(cfg):
         if cmd == "sair":
             print("Descartado; nada salvo.")
             return
-        nome = COMANDOS_GRAVACAO.get(cmd)
-        if not nome:
-            print("Comando desconhecido.")
+        if not cmd:
             continue
-        tecla(ip, nome)
-        seq.append(nome)
+        if cmd in COMANDOS_GRAVACAO:
+            nomes = [COMANDOS_GRAVACAO[cmd]]
+        elif set(cmd) <= set("wasd"):  # ex.: "sss" = baixo 3 vezes
+            nomes = [COMANDOS_GRAVACAO[c] for c in cmd]
+        else:
+            print("Comando desconhecido. Use w/s/a/d (ex.: sss), ok, voltar, home, fim ou sair.")
+            continue
+        for nome in nomes:
+            tecla(ip, nome)
+            seq.append(nome)
+            time.sleep(0.35)
 
 
 # ---------------------------------------------------------------- CLI
