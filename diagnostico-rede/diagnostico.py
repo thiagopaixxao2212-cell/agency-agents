@@ -378,21 +378,41 @@ def etapa_wifi(c):
 
 # ------------------------------------------------------------------ 5. dispositivos
 
+FONTES_FABRICANTES = [MANUF_URL, "https://standards-oui.ieee.org/oui/oui.txt"]
+
+
+def ler_tabela_fabricantes(texto):
+    """Aceita o formato do Wireshark (00:00:0C<TAB>Cisco<TAB>Cisco Systems) e o do IEEE (00-00-0C   (hex)  Cisco)."""
+    tabela = {}
+    for linha in texto.splitlines():
+        m = re.match(r"^\s*([0-9A-Fa-f]{2})[:-]([0-9A-Fa-f]{2})[:-]([0-9A-Fa-f]{2})(?:\s+\(hex\))?\s+(.+)$", linha)
+        if m and "/" not in linha.split()[0]:
+            nome = m.group(4).split("\t")
+            nome = (nome[1] if len(nome) > 1 and nome[1].strip() else nome[0]).strip()
+            tabela[":".join(m.group(i) for i in (1, 2, 3)).lower()] = nome
+    return tabela
+
+
 def carregar_fabricantes(c):
     arq = PASTA / "manuf.txt"
-    if not arq.exists() or time.time() - arq.stat().st_mtime > 90 * 86400:
+    tabela = ler_tabela_fabricantes(arq.read_text(encoding="utf-8", errors="replace")) if arq.exists() else {}
+    if len(tabela) > 1000 and time.time() - arq.stat().st_mtime < 90 * 86400:
+        return tabela
+    for url in FONTES_FABRICANTES:
         try:
-            req = urllib.request.Request(MANUF_URL, headers=UA)
-            with urllib.request.urlopen(req, timeout=30) as r:
-                arq.write_bytes(r.read())
+            req = urllib.request.Request(url, headers=UA)
+            with urllib.request.urlopen(req, timeout=60) as r:
+                texto = r.read().decode("utf-8", "replace")
+            nova = ler_tabela_fabricantes(texto)
+            if len(nova) > 1000:
+                arq.write_text(texto, encoding="utf-8")
+                print(f"   lista de fabricantes: {len(nova)} prefixos ({url.split('/')[2]})")
+                return nova
+            raise ValueError(f"formato inesperado ({len(nova)} prefixos lidos)")
         except Exception as e:
-            c.dados["erros"].append(f"lista de fabricantes não baixada: {e}")
-    tabela = {}
-    if arq.exists():
-        for linha in arq.read_text(encoding="utf-8", errors="replace").splitlines():
-            partes = linha.split("\t")
-            if len(partes) >= 2 and re.fullmatch(r"[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){2}", partes[0]):
-                tabela[partes[0].lower()] = (partes[2] if len(partes) > 2 and partes[2] else partes[1]).strip()
+            msg = f"lista de fabricantes ({url.split('/')[2]}): {type(e).__name__}: {e}"
+            print(f"   aviso: {msg}")
+            c.dados["erros"].append(msg)
     return tabela
 
 
